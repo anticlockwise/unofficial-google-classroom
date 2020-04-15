@@ -1,0 +1,30 @@
+{
+  "askcliStatesVersion": "2020-03-31",
+  "profiles": {
+    "default": {
+      "skillInfrastructure": {
+        "@ask-cli/cfn-deployer": {
+          "deployState": {
+            "default": {
+              "s3": {
+                "bucket": "ask-unofficial-google-clas-askclidef-useast1-1586924372338",
+                "key": "endpoint/build.zip",
+                "objectVersion": "eatbn2_AlBaQg9JSQR1s_.be2XxrkRgO"
+              },
+              "stackId": "arn:aws:cloudformation:us-east-1:262962942834:stack/ask-UnofficialGoogleClassroom-default-skillStack-1586924372338/545e1250-7ed0-11ea-bcb1-0ece9c9311f7"
+            }
+          }
+        }
+      },
+      "skillId": "amzn1.ask.skill.ee7b2491-e8eb-4b02-a97b-712e595dd007",
+      "skillMetadata": {
+        "lastDeployHash": "Ouy1787SO8qEfzCdtrdYb6De1dY="
+      },
+      "code": {
+        "default": {
+          "lastDeployHash": "mfCFfdbvyDmH3Gh1+gTugJ7jeqk="
+        }
+      }
+    }
+  }
+}
