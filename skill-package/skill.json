@@ -1,0 +1,114 @@
+{
+  "manifest": {
+    "publishingInformation": {
+      "locales": {
+        "en-US": {
+          "summary": "Sample Short Description",
+          "examplePhrases": [
+            "\"Alexa, what are my grades?\"",
+            "\"Alexa, what did Hannah do in school today?\""
+          ],
+          "name": "Unofficial Google Classroom",
+          "description": "This is an unofficial Alexa skill for interacting with Google Classroom"
+        }
+      },
+      "isAvailableWorldwide": true,
+      "testingInstructions": "Alexa, what are my grades?",
+      "category": "EDUCATION_AND_REFERENCE",
+      "distributionCountries": []
+    },
+    "permissions": [
+      {
+        "name": "alexa::authenticate:2:optional"
+      }
+    ],
+    "apis": {
+      "education": {
+        "regions": {
+          "NA": {
+            "endpoint": {
+              "uri": "arn:aws:lambda:us-east-1:262962942834:function:ask-UnofficialGoogleClassroom-d-AlexaSkillFunction-1RRB1NUUK9GNR"
+            }
+          }
+        },
+        "endpoint": {
+          "uri": "arn:aws:lambda:us-east-1:262962942834:function:ask-UnofficialGoogleClassroom-d-AlexaSkillFunction-1RRB1NUUK9GNR"
+        },
+        "locales": {
+          "en-US": {
+            "promptName": "Google Classroom"
+          }
+        },
+        "interfaces": [
+          {
+            "namespace": "Alexa.Education.Profile.Student",
+            "version": "1.0",
+            "requests": [
+              {
+                "name": "Get"
+              }
+            ]
+          },
+          {
+            "namespace": "Alexa.Education.Course",
+            "version": "1.0",
+            "requests": [
+              {
+                "name": "Get"
+              }
+            ]
+          },
+          {
+            "namespace": "Alexa.Education.Coursework",
+            "version": "1.0",
+            "requests": [
+              {
+                "name": "Get"
+              }
+            ]
+          },
+          {
+            "namespace": "Alexa.Education.Grade.Course",
+            "version": "1.0",
+            "requests": [
+              {
+                "name": "Get"
+              }
+            ]
+          },
+          {
+            "namespace": "Alexa.Education.Grade.Coursework",
+            "version": "1.0",
+            "requests": [
+              {
+                "name": "Get"
+              }
+            ]
+          },
+          {
+            "namespace": "Alexa.Education.School.Communication",
+            "version": "1.0",
+            "requests": [
+              {
+                "name": "Get"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "privacyAndCompliance": {
+      "locales": {
+        "en-US": {
+          "privacyPolicyUrl": "https://example.com/privacy"
+        }
+      },
+      "allowsPurchases": false,
+      "isExportCompliant": true,
+      "containsAds": false,
+      "isChildDirected": false,
+      "usesPersonalInfo": true
+    },
+    "manifestVersion": "1.0"
+  }
+}

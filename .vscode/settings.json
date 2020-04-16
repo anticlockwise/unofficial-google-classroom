@@ -1,0 +1,4 @@
+{
+    "python.pythonPath": "skill_env/bin/python3.6",
+    "git.ignoreLimitWarning": true
+}
