@@ -1,8 +1,7 @@
 {
   "askcliResourcesVersion": "2020-03-31",
   "profiles": {
-    "personal": {
-      "skillId": "",
+    "default": {
       "skillMetadata": {
         "src": "./skill-package"
       },
@@ -12,13 +11,13 @@
         }
       },
       "skillInfrastructure": {
+        "type": "@ask-cli/cfn-deployer",
         "userConfig": {
           "runtime": "python3.6",
           "handler": "hello_world.handler",
           "templatePath": "./infrastructure/cfn-deployer/skill-stack.yaml",
           "awsRegion": "us-east-1"
-        },
-        "type": "@ask-cli/cfn-deployer"
+        }
       }
     }
   }

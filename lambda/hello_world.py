@@ -20,6 +20,7 @@ logger.setLevel(logging.INFO)
 
 STUDENT_PROFILE_NAMESPACE = "Alexa.Education.Profile.Student"
 COURSEWORK_NAMESPACE = "Alexa.Education.Coursework"
+ANNOUNCEMENTS_NAMESPACE = "Alexa.Education.School.Communication"
 
 def student_profile_handler(request, creds, context):
     service = build('classroom', 'v1', credentials=creds)
@@ -167,6 +168,21 @@ def coursework_handler(request, creds, context):
         }
     }
 
+def _handle_announcement(request_id, response, exception, all_announcements):
+    start = datetime.datetime.utcnow() - datetime.timedelta(days=7)
+    start = start.replace(tzinfo=datetime.timezone.utc)
+    announcements = response.get("announcements", [])
+    for announcement in announcements:
+        update_time = dateutil.parser.isoparse(announcement['updateTime']).replace(tzinfo=datetime.timezone.utc)
+        if update_time < start:
+            continue
+        all_announcements.append(announcement)
+
+def _handle_user_profile(request_id, response, exception, all_users):
+    logger.info("User profile: {}".format(json.dumps(response)))
+    logger.info("Exception: {}".format(exception))
+    all_users[response['id']] = response
+
 def announcements_handler(request, creds, context):
     pagination_context = request['paginationContext']
     max_results = pagination_context['maxResults']
@@ -174,11 +190,61 @@ def announcements_handler(request, creds, context):
     student_id = query['matchAll'].get('studentId', "me")
 
     service = build('classroom', 'v1', credentials=creds)
-    courses = service.courses().list(userId=student_id).execute()
+    courses = service.courses().list(studentId=student_id, fields="courses(id)").execute()
+
+    all_announcements = []
+    announcements_partial = functools.partial(_handle_announcement, all_announcements=all_announcements)
+    course_ids = [c['id'] for c in courses.get("courses", [])]
+    batch_request = service.new_batch_http_request()
+    for course_id in course_ids:
+        batch_request.add(service.courses().announcements().list(courseId=course_id), callback=announcements_partial)
+    batch_request.execute()
+    logger.info("Announcements: {}".format(json.dumps(all_announcements)))
+
+    all_users = {}
+    user_profiles_partial = functools.partial(_handle_user_profile, all_users=all_users)
+    user_ids = set([a['creatorUserId'] for a in all_announcements])
+    user_batch_requests = service.new_batch_http_request()
+    for user_id in user_ids:
+        user_batch_requests.add(service.userProfiles().get(userId=user_id), callback=user_profiles_partial)
+    user_batch_requests.execute()
+
+    converted_announcements = [
+        {
+            "id": a['id'],
+            'type': 'GENERIC_FROM',
+            'kind': 'ANNOUNCEMENT',
+            'from': all_users.get(a['creatorUserId'], "Unknown"),
+            'content': {
+                'type': 'PLAIN_TEXT',
+                'text': a['text']
+            },
+            'publishedTime': a['updateTime']
+        } for a in all_announcements[:max_results]
+    ]
+    logger.info("Converted announcements: {}".format(json.dumps(converted_announcements)))
+
+    return {
+        "response": {
+            "header": {
+                "namespace": ANNOUNCEMENTS_NAMESPACE,
+                "name": "GetResponse",
+                "interfaceVersion": "1.0",
+                "messageId": str(uuid.uuid4())
+            },
+            "payload": {
+                "paginationContext": {
+                    "totalCount": len(converted_announcements)
+                },
+                "schoolCommunications": converted_announcements
+            }
+        }
+    }
 
 HANDLER_MAP = {
     STUDENT_PROFILE_NAMESPACE: student_profile_handler,
-    COURSEWORK_NAMESPACE: coursework_handler
+    COURSEWORK_NAMESPACE: coursework_handler,
+    ANNOUNCEMENTS_NAMESPACE: announcements_handler
 }
 
 def handler(event, context):
