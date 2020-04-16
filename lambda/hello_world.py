@@ -181,7 +181,14 @@ def _handle_announcement(request_id, response, exception, all_announcements):
 def _handle_user_profile(request_id, response, exception, all_users):
     logger.info("User profile: {}".format(json.dumps(response)))
     logger.info("Exception: {}".format(exception))
-    all_users[response['id']] = response
+    if response:
+        all_users[response['id']] = response
+
+def _extract_name(user):
+    if user:
+        name = user['name']
+        return name.get("fullName", name.get("givenName", "Unknown user"))
+    return "Unknown user"
 
 def announcements_handler(request, creds, context):
     pagination_context = request['paginationContext']
@@ -206,7 +213,7 @@ def announcements_handler(request, creds, context):
     user_ids = set([a['creatorUserId'] for a in all_announcements])
     user_batch_requests = service.new_batch_http_request()
     for user_id in user_ids:
-        user_batch_requests.add(service.userProfiles().get(userId=user_id), callback=user_profiles_partial)
+        user_batch_requests.add(service.userProfiles().get(userId=user_id, fields="id,name"), callback=user_profiles_partial)
     user_batch_requests.execute()
 
     converted_announcements = [
@@ -214,7 +221,7 @@ def announcements_handler(request, creds, context):
             "id": a['id'],
             'type': 'GENERIC_FROM',
             'kind': 'ANNOUNCEMENT',
-            'from': all_users.get(a['creatorUserId'], "Unknown"),
+            'from': _extract_name(all_users.get(a['creatorUserId'])),
             'content': {
                 'type': 'PLAIN_TEXT',
                 'text': a['text']
