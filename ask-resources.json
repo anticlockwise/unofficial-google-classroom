@@ -14,7 +14,7 @@
         "type": "@ask-cli/cfn-deployer",
         "userConfig": {
           "runtime": "python3.6",
-          "handler": "app.hello_world.handler",
+          "handler": "app.education.handler",
           "templatePath": "./infrastructure/cfn-deployer/skill-stack.yaml",
           "awsRegion": "us-east-1"
         }

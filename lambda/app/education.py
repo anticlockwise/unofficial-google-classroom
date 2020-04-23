@@ -16,6 +16,7 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
+from .custom import get_handler
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -99,7 +100,8 @@ def course_handler(request, creds, context):
 def coursework_handler(request, creds, context):
     service = build('classroom', 'v1', credentials=creds)
     student_id = request['query']['matchAll']['studentId']
-    courses = service.courses().list(studentId=student_id, fields="courses(id,name)").execute()
+    courses = service.courses().list(studentId=student_id,
+                                     fields="courses(id,name)").execute()
     logger.info("Courses: {}".format(json.dumps(courses)))
 
     due_time = request['query']['matchAll']['dueTime']
@@ -117,7 +119,8 @@ def coursework_handler(request, creds, context):
 
     handle_course_works_partial = functools.partial(
         handle_course_works, all_course_works=all_course_works)
-    handle_submissions_partial = functools.partial(handle_submission, all_submissions=all_submissions)
+    handle_submissions_partial = functools.partial(
+        handle_submission, all_submissions=all_submissions)
     batch_cw_request = service.new_batch_http_request()
     batch_submissions_request = service.new_batch_http_request()
 
@@ -126,14 +129,15 @@ def coursework_handler(request, creds, context):
         batch_cw_request.add(service.courses().courseWork().list(
             courseId=course_id, orderBy="dueDate desc", pageSize=max_results,
             fields="courseWork(id,workType,courseId,dueDate,dueTime,title,description,creationTime)"),
-            callback=functools.partial(handle_course_works,\
-                all_course_works=all_course_works))
+            callback=functools.partial(handle_course_works,
+                                       all_course_works=all_course_works))
         submission_request = service.courses().courseWork().studentSubmissions().list(
             courseId=course_id,
             courseWorkId="-",
             userId=student_id
         )
-        batch_submissions_request.add(submission_request, callback=handle_submissions_partial)
+        batch_submissions_request.add(
+            submission_request, callback=handle_submissions_partial)
     batch_cw_request.execute()
     batch_submissions_request.execute()
 
@@ -173,7 +177,8 @@ def coursework_handler(request, creds, context):
         logger.info("Converted course work: {}".format(converted_cw))
 
         submissions = all_submissions.get(course_work_id, [])
-        converted_cw["submissionState"] = "NOT_SUBMITTED" if len(submissions) <= 0 else "SUBMITTED"
+        converted_cw["submissionState"] = "NOT_SUBMITTED" if len(
+            submissions) <= 0 else "SUBMITTED"
         converted_course_works.append(converted_cw)
 
     return {
@@ -202,16 +207,19 @@ def coursework_grade_handler(request, creds, context):
     student_id = query['studentId']
     all_courses = {}
     if 'courseId' in query:
-        course = service.courses().get(id=query['courseId'], fields="id,name").execute()
+        course = service.courses().get(
+            id=query['courseId'], fields="id,name").execute()
         all_courses[course["id"]] = course["name"]
     else:
-        response = service.courses().list(studentId=student_id, fields="courses(id,name)").execute()
+        response = service.courses().list(
+            studentId=student_id, fields="courses(id,name)").execute()
         courses = response.get("courses", [])
-        all_courses.update({ c['id']: c['name'] for c in courses })
+        all_courses.update({c['id']: c['name'] for c in courses})
 
     all_submissions = collections.defaultdict(list)
     all_course_works = {}
-    handle_submissions_partial = functools.partial(handle_submission, all_submissions=all_submissions)
+    handle_submissions_partial = functools.partial(
+        handle_submission, all_submissions=all_submissions)
 
     batch_submissions_request = service.new_batch_http_request()
     batch_cw_request = service.new_batch_http_request()
@@ -221,14 +229,15 @@ def coursework_grade_handler(request, creds, context):
         batch_cw_request.add(service.courses().courseWork().list(
             courseId=course_id, orderBy="dueDate desc",
             fields="courseWork(id,title,maxPoints)"),
-            callback=functools.partial(handle_course_works,\
-                all_course_works=all_course_works))
+            callback=functools.partial(handle_course_works,
+                                       all_course_works=all_course_works))
     batch_submissions_request.execute()
     batch_cw_request.execute()
 
     all_grades = []
     for student_submissions in all_submissions.values():
-        graded_submissions = list(filter(lambda s: s.get("assignedGrade") is not None, student_submissions))
+        graded_submissions = list(filter(lambda s: s.get(
+            "assignedGrade") is not None, student_submissions))
         if len(graded_submissions) > 0:
             last_submission = graded_submissions[-1]
             course_work_id = last_submission['courseWorkId']
@@ -237,7 +246,7 @@ def coursework_grade_handler(request, creds, context):
             course_work = all_course_works.get(course_work_id)
             course_name = all_courses.get(course_id)
             if course_work is None or course_name is None or course_work.get("title") is None\
-                or course_work.get("maxPoints") is None or course_work.get("maxPoints") == 0:
+                    or course_work.get("maxPoints") is None or course_work.get("maxPoints") == 0:
                 continue
 
             course_work_title = course_work["title"]
@@ -287,23 +296,28 @@ def announcements_handler(request, creds, context):
     student_id = query['matchAll'].get('studentId', "me")
 
     service = build('classroom', 'v1', credentials=creds)
-    courses = service.courses().list(studentId=student_id, fields="courses(id)").execute()
+    courses = service.courses().list(studentId=student_id,
+                                     fields="courses(id)").execute()
 
     all_announcements = []
-    announcements_partial = functools.partial(handle_announcement, all_announcements=all_announcements)
+    announcements_partial = functools.partial(
+        handle_announcement, all_announcements=all_announcements)
     course_ids = [c['id'] for c in courses.get("courses", [])]
     batch_request = service.new_batch_http_request()
     for course_id in course_ids:
-        batch_request.add(service.courses().announcements().list(courseId=course_id), callback=announcements_partial)
+        batch_request.add(service.courses().announcements().list(
+            courseId=course_id), callback=announcements_partial)
     batch_request.execute()
     logger.info("Announcements: {}".format(json.dumps(all_announcements)))
 
     all_users = {}
-    user_profiles_partial = functools.partial(handle_user_profile, all_users=all_users)
+    user_profiles_partial = functools.partial(
+        handle_user_profile, all_users=all_users)
     user_ids = set([a['creatorUserId'] for a in all_announcements])
     user_batch_requests = service.new_batch_http_request()
     for user_id in user_ids:
-        user_batch_requests.add(service.userProfiles().get(userId=user_id, fields="id,name"), callback=user_profiles_partial)
+        user_batch_requests.add(service.userProfiles().get(
+            userId=user_id, fields="id,name"), callback=user_profiles_partial)
     user_batch_requests.execute()
 
     converted_announcements = [
@@ -319,7 +333,8 @@ def announcements_handler(request, creds, context):
             'publishedTime': a['updateTime']
         } for a in all_announcements[:max_results]
     ]
-    logger.info("Converted announcements: {}".format(json.dumps(converted_announcements)))
+    logger.info("Converted announcements: {}".format(
+        json.dumps(converted_announcements)))
 
     return {
         "response": {
@@ -354,15 +369,20 @@ HANDLER_MAP = {
     COURSE_WORK_GRADE_NAMESPACE: coursework_grade_handler
 }
 
+
 def handler(event, context):
     logger.info(json.dumps(event))
     request = event['request']
 
-    header = request['header']
-    namespace, name = header['namespace'], header['name']
+    if 'header' in request:
+        header = request['header']
+        namespace, name = header['namespace'], header['name']
 
-    authorization = request['authorization']
-    creds = Credentials(authorization['token'])
+        authorization = request['authorization']
+        creds = Credentials(authorization['token'])
 
-    real_handler = HANDLER_MAP[namespace]
-    return real_handler(request['payload'], creds, context)
+        real_handler = HANDLER_MAP[namespace]
+        return real_handler(request['payload'], creds, context)
+    else:
+        custom_handler = get_handler()
+        return custom_handler(event, context)
